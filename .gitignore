@@ -1,0 +1,12 @@
+# Ignore tracking everything by default
+*
+
+# Track only Python or jupyter files in the root or specific folder
+!*.py
+!Scripts/
+!*.ipynb
+!Notebooks/
+
+# Keep these tracked
+!.gitignore
+!README.md
