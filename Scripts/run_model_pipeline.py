@@ -1,0 +1,55 @@
+# This script runs the whole pipeline when executed through MODELLER
+
+# === User Inputs ===
+import os
+
+# Define the templates of interest
+v_template = input("Enter PDB code for variable region template (e.g., 1n8z): ").strip().lower()
+c_Fab_template = input("Enter PDB code for Fab constant region template (e.g., 3m8o): ").strip().lower()
+c_Fc_template = input("Enter PDB code for Fc constant region template (e.g., XXXX): ").strip().lower() # Potentially deactivate unless my_run_info states True
+predicted_hinge_template = input("Enter filename for predicted hinge template (e.g., AF_NNNN_hinge): ") # Potentially deactivate unless my_run_info states True
+
+# Check the pdb code matches a file name in the folder
+if os.path.exists(f"../PDB_data{v_template}"): # fix this conditional and make it loop back or terminate if no value entered
+    print("Files found.")
+else:
+    print(f"File for {v_template} not found")
+
+# === Sequence Preparation ===
+import prepare_sequences
+
+# Load VCAb into dataframe
+df_raw = prepare_sequences.load_VCAb()
+
+# Refine & filter VCAb dataframe
+df_refined = prepare_sequences.refine_VCAb(df_raw)
+
+# Visualise the filtered VCAb dataframe
+print(f"Rows, columns: {df_refined.shape}")
+df_refined.head(5)
+
+# Filter only rows where matching user-entered pdb is True and create a copy of the dataframe. 
+# NOTE: `df_matches` is an independant copy of `df_refined`. Use df_matches from this point on
+df_matches = df_refined[
+    df_refined["pdb"].isin([v_template, c_Fab_template])
+].copy()
+
+# Extract Immunoglobulin isotype label and store as variable
+# NOTE: add this to the write FASTA function
+for idx, row in df_matches.iterrows():
+    if row["pdb"] == c_Fab_template:
+        isotype_IgXX_label = str(row["H_isotype_clean"])
+        
+print(f"Constant region template is {isotype_IgXX_label}.")
+
+# Do you wish to create FASTA files?
+    # User input [y/n]. If n, skip to next section
+    
+    # Extract sequences and trim overlapping regions
+
+    # Write heavy and light chain FASTA files
+
+# === Clustal Alignment ===
+# NOTE: Not currently set up
+
+# === .pir File Creation ===
