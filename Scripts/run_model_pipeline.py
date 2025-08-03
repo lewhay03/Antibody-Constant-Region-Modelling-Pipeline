@@ -24,12 +24,12 @@ for dir_name in required_dirs:
 
 # Define the templates of interest
 v_template = input("Enter PDB code for variable region template (e.g., 1n8z): ").strip().lower()
-c_Fab_template = input("Enter PDB code for Fab constant region template (e.g., 3m8o): ").strip().lower()
+c_template = input("Enter PDB code for Fab constant region template (e.g., 3m8o): ").strip().lower()
 c_Fc_template = input("Enter PDB code for Fc constant region template (e.g., XXXX): ").strip().lower() # Potentially deactivate unless my_run_info states True
 predicted_hinge_template = input("Enter filename for predicted hinge template (e.g., AF_NNNN_hinge): ") # Potentially deactivate unless my_run_info states True
 
 # Check the pdb code matches a file name in the folder
-if os.path.exists(f"../PDB_data{v_template}"): # fix this conditional and make it loop back or terminate if no value entered
+if os.path.exists(f"../atom_files/{v_template}.cif") & os.path.exists(f"../atom_files/{c_template}.cif"): # fix this conditional and make it loop back or terminate if no value entered
     print("Files found.")
 else:
     print(f"File for {v_template} not found")
@@ -50,16 +50,23 @@ df_refined.head(5)
 # Filter only rows where matching user-entered pdb is True and create a copy of the dataframe. 
 # NOTE: `df_matches` is an independant copy of `df_refined`. Use df_matches from this point on
 df_matches = df_refined[
-    df_refined["pdb"].isin([v_template, c_Fab_template])
+    df_refined["pdb"].isin([v_template, c_template])
 ].copy()
+
+# Add a 'template' annotation column
+df_matches.insert(loc=1, column="template", value=None)
+df_matches.loc[df_matches["pdb"] == v_template, "template"] = "v_template"
+df_matches.loc[df_matches["pdb"] == c_template, "template"] = "c_template"
+
+df_matches
 
 # Extract Immunoglobulin isotype label and store as variable
 # NOTE: add this to the write FASTA function
 for idx, row in df_matches.iterrows():
-    if row["pdb"] == c_Fab_template:
-        isotype_IgXX_label = str(row["H_isotype_clean"])
+    if row["pdb"] == c_template:
+        isotype_label = str(row["H_isotype_clean"])
         
-print(f"Constant region template is {isotype_IgXX_label}.")
+print(f"Constant region template is {isotype_label}.")
 
 # Do you wish to create FASTA files?
     # User input [y/n]. If n, skip to next section
@@ -67,6 +74,13 @@ print(f"Constant region template is {isotype_IgXX_label}.")
     # Extract sequences and trim overlapping regions
 
     # Write heavy and light chain FASTA files
+
+# Uses * to unpack the tuple from zip function
+cl_zip, ch_zip = prepare_sequences.get_constant_region(*prepare_sequences.zip_template_cif(df_matches, c_template))
+vl_zip, vh_zip = prepare_sequences.get_variable_region(*prepare_sequences.zip_template_cif(df_matches, v_template))
+
+# Make recombinant antibody Fab region
+recombinant_seq_light, recombinant_seq_heavy = prepare_sequences.make_recombinant_seqs(vl_zip, vh_zip, cl_zip, ch_zip)
 
 # === Clustal Alignment ===
 # NOTE: Not currently set up
