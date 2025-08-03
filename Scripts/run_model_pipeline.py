@@ -3,6 +3,24 @@
 # === User Inputs ===
 import os
 
+# Set the project root using absolute path and adding ".." to 
+# move up 1 level from .../Modelling-Pipeline/Scripts -> .../Modelling-Pipeline
+project_root = os.path.abspath(os.path.join(os.getcwd(), ".."))
+
+# List of required directories
+required_dirs = [
+    "VCAb_data",
+    "fasta_sequences",
+    "alignments",
+    "pir_files",
+    "models",
+    "pickles"
+]
+
+# Create each directory if it doesn't exist
+for dir_name in required_dirs:
+    os.makedirs(os.path.join(project_root, dir_name), exist_ok=True)
+
 # Define the templates of interest
 v_template = input("Enter PDB code for variable region template (e.g., 1n8z): ").strip().lower()
 c_Fab_template = input("Enter PDB code for Fab constant region template (e.g., 3m8o): ").strip().lower()

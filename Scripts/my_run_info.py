@@ -25,11 +25,11 @@ VCAb_dir = "../VCAb_data/VCAb.csv"
 vh_boundary = "LVTVSS"
 
 # Output directories
-FASTA_out_dir = "../FASTA_seqs"
-clustal_out_dir = "../Alignments"
-pir_out_dir = "../PIR_files"
-models_out_dir = "../Models"
-pickle_out_dir = "../Pickles"
+fasta_out_dir = "../fasta_sequences"
+clustal_out_dir = "../alignments"
+pir_out_dir = "../pir_files"
+models_out_dir = "../models"
+pickle_out_dir = "../pickles"
 
 # Output file names (will be suffixed with a timestamp) - change this
 FASTA_heavy_out_file = "IgA1_heavy_chain_out.fasta"
