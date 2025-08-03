@@ -24,10 +24,11 @@ VCAb_dir = "../VCAb_data/VCAb.csv"
 # Expected final VH residues in VH-to-CH1 boundary
 vh_boundary = "LVTVSS"
 
-# Output directories
+# Directories
 fasta_out_dir = "../fasta_sequences"
 clustal_out_dir = "../alignments"
 pir_out_dir = "../pir_files"
+cif_dir = "../atom_files"
 models_out_dir = "../models"
 pickle_out_dir = "../pickles"
 

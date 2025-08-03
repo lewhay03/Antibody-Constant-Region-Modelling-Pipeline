@@ -13,6 +13,7 @@ required_dirs = [
     "fasta_sequences",
     "alignments",
     "pir_files",
+    "atom_files",
     "models",
     "pickles"
 ]
