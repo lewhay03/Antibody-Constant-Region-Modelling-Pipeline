@@ -1,9 +1,13 @@
 import pandas as pd
 import my_run_info
+import os
+from datetime import datetime
+
 
 def load_VCAb():
     """Load the raw VCAb.csv database (from my_run_info.py) into a pandas DataFrame."""
     return pd.read_csv(my_run_info.VCAb_dir)
+
 
 def refine_VCAb(df):
     """Clean and reduce the VCAb DataFrame to important and clean columns only.
@@ -33,6 +37,7 @@ def refine_VCAb(df):
         (df_keep["L_isotype_clean"].str.contains("kappa", case=False))
     ]
     return df_refined_entries
+
 
 # Can be called separately for each template
 def zip_template_cif(df: pd.DataFrame, pdb_code: str):
@@ -65,6 +70,7 @@ def zip_template_cif(df: pd.DataFrame, pdb_code: str):
 
     return (light_zip, heavy_zip, light_cif_VC_boundary, heavy_cif_VC_boundary)
 
+
 def get_constant_region(light_zip, heavy_zip, light_boundary, heavy_boundary):
     """Extracts the tuple after the Variable-Constant boundary within a heavy/light chain zip."""
 
@@ -86,6 +92,7 @@ def get_constant_region(light_zip, heavy_zip, light_boundary, heavy_boundary):
 
     return (light_post_boundary, heavy_post_boundary)
 
+
 def get_variable_region(light_zip, heavy_zip, light_boundary, heavy_boundary):
     """Extracts the tuple before the Variable-Constant boundary within a heavy/light chain zip."""
 
@@ -101,6 +108,7 @@ def get_variable_region(light_zip, heavy_zip, light_boundary, heavy_boundary):
     heavy_pre_boundary = heavy_zip[:heavy_boundary_index + 1]
 
     return (light_pre_boundary, heavy_pre_boundary)
+
 
 # The recombinant antibody must only combine V sequence of v_template + C sequence of c_template
 def make_recombinant_seqs(vl_zip, vh_zip, cl_zip, ch_zip):
@@ -124,11 +132,9 @@ def make_recombinant_seqs(vl_zip, vh_zip, cl_zip, ch_zip):
 
     return (recombinant_seq_light, recombinant_seq_heavy)
 
-def make_df_heavies(df_filtered: pd.DataFrame) -> pd.DataFrame:
-    """Creates a new dataframe for heavy chain metadata from an already-filtered dataframe."""
 
-    # Call the recombinant sequence function and assign variables
-    _, recombinant_seq_heavy = make_recombinant_seqs(vl_zip, vh_zip, cl_zip, ch_zip)
+def make_df_heavies(df_filtered: pd.DataFrame, recombinant_seq_heavy) -> pd.DataFrame:
+    """Creates a new dataframe for heavy chain metadata from an already-filtered dataframe."""
 
     df_heavies = pd.DataFrame({
     "pdb": df_filtered["pdb"],
@@ -176,5 +182,107 @@ def make_df_heavies(df_filtered: pd.DataFrame) -> pd.DataFrame:
 
     return df_heavies
 
-df_heavy = make_df_heavies(df_filtered)
-df_heavy
+
+def make_df_lights(df_filtered: pd.DataFrame, recombinant_seq_light) -> pd.DataFrame:
+    """Creates a new dataframe for light chain metadata from an already-filtered dataframe."""
+
+    df_lights = pd.DataFrame({
+    "pdb": df_filtered["pdb"],
+    "template": df_filtered["template"],
+    "Lchain": df_filtered["Lchain"],
+    "H_isotype_clean": df_filtered["H_isotype_clean"],
+    "HC_species": df_filtered["HC_species"],
+    "L_coordinate_seq": df_filtered["L_coordinate_seq"],
+    })
+
+    # Clean Hchain to keep only first character
+    df_lights["Lchain"] = df_lights["Lchain"].str[0]
+    
+    first_residue_nos = []
+    last_residue_nos = []
+
+    # Using iterrows for stable behaviour in pandas
+    for idx, row in df_filtered.iterrows():
+
+        # Split the string of numbering to a list and extract start/end values
+        residue_numbering_list = list(map(int, row["L_PDB_numbering"].split(",")))
+        last_residue_nos.append(residue_numbering_list[-1])
+        first_residue_nos.append(residue_numbering_list[0])
+    
+    #Add new columns to new df
+    df_lights["L_chain_first_residue"] = first_residue_nos
+    df_lights["L_chain_last_residue"] = last_residue_nos
+
+    # Append recombinant hybrid row to the new dataframe
+    hybrid_row = {
+        "pdb": "Fab_hybrid",
+        "template": "target",
+        
+        # Assigns the constant region's isotype as the isotype for the target
+        "H_isotype_clean": df_filtered.loc[df_filtered["template"] == "c_template", "H_isotype_clean"].values[0],
+        
+        # Assigns the species
+        "HC_species": df_filtered.loc[df_filtered["template"] == "c_template", "HC_species"].values[0],
+        
+        # Add the recombinant sequence to the new row dict
+        "L_coordinate_seq": recombinant_seq_light
+    }
+    
+    df_lights = pd.concat([df_lights, pd.DataFrame([hybrid_row])], ignore_index=True)
+    
+    return df_lights
+
+
+def write_fastas(df_l, df_h, fasta_out_dir, df_filtered):
+    """Write 2 fasta files for light and heavy chains."""
+    
+    # Create date-time stamp to add to file name
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    # Create isotype label to add to the filename
+    isotype = str(df_filtered.query("template == 'c_template'")["H_isotype_clean"].iloc[0])
+
+    try:
+        # ===Light FASTA===
+        lfilename = f"light_chain_{isotype}_{timestamp}.fasta"
+        stamped_l_file = os.path.join(fasta_out_dir, lfilename)
+        with open(stamped_l_file, "w") as lf:
+            for _, row in df_l.iterrows():
+
+                # Skip fields that are NA
+                if pd.isna(row["Lchain"]):
+                    chain = ""
+                else:
+                    chain = f"Chain {row["Lchain"]}|"
+
+                header = (
+                    f'>{row["pdb"]}|{chain}Light_Chain_Fab_{row["H_isotype_clean"]} {row["template"]}|'
+                    f'{row["HC_species"] if pd.notna(row["HC_species"]) else "species not listed"}'
+                )
+                sequence = row["L_coordinate_seq"]
+
+                lf.write(header + "\n" + sequence + "\n")
+
+        # ===Heavy FASTA===
+        hfilename = f"heavy_chain_{isotype}_{timestamp}.fasta"
+        stamped_h_file = os.path.join(fasta_out_dir, hfilename)
+        with open(stamped_h_file, "w") as hf:
+            for _, row in df_h.iterrows():
+
+                # Skip fields that are NA
+                if pd.isna(row["Hchain"]):
+                    chain = ""
+                else:
+                    chain = f"Chain {row["Hchain"]}|"
+
+                header = (
+                    f'>{row["pdb"]}|{chain}Heavy_Chain_Fab_{row["H_isotype_clean"]} {row["template"]}|'
+                    f'{row["HC_species"] if pd.notna(row["HC_species"]) else "species not listed"}'
+                )
+                sequence = row["H_coordinate_seq"]
+
+                hf.write(header + "\n" + sequence + "\n")
+
+    except Exception as e:
+        print(f"Error whilst writing FASTA file: {e}")
+
