@@ -28,7 +28,7 @@ for dir_name in required_dirs:
     os.makedirs(os.path.join(project_root, dir_name), exist_ok=True)
 
 # Loop inputs until matching files are found
-def prompt_for_existing_file(prompt, suffix="cif", search_dir="../VCAb_data"):
+def prompt_for_existing_file(prompt, suffix=".cif", search_dir="../VCAb_data"):
     while True:
         pdb_id = input(prompt).strip().lower()
         file_path = os.path.join(search_dir, f"{pdb_id}{suffix}")
@@ -50,7 +50,17 @@ c_template = prompt_for_existing_file(
 #    "Enter filename for predicted hinge template (e.g., AF_NNNN_hinge): "
 #    ) # Potentially deactivate unless my_run_info states True
 
-
+# Prompt User Function
+def ask_user(question: str) -> bool:
+    """Returns True if user inputs 'y', False if 'n'."""
+    while True:
+        response = input(f"{question} (y/n): ").strip().lower()
+        if response == 'y':
+            return True
+        elif response == 'n':
+            return False
+        else:
+            print("Please enter 'y' or 'n'.")
 
 # === Sequence Preparation ===
 import prepare_sequences
@@ -111,12 +121,25 @@ df_light = prepare_sequences.make_df_lights(df_matches, recombinant_seq_light)
 df_light
 df_heavy
 
-# Write 1 heavy and 1 light fasta file for submission to clustal aligner
-prepare_sequences.write_fastas(df_light, df_heavy, 
-                               my_run_info.fasta_out_dir, 
-                               df_matches,
-                               timestamp
-                               )
+if ask_user("Do you wish to write new FASTA files?"):
+    # Write 1 heavy and 1 light fasta file for submission to clustal aligner
+    prepare_sequences.write_fastas(df_light, df_heavy, 
+                                my_run_info.fasta_out_dir, 
+                                df_matches,
+                                timestamp
+                                )
+else:
+    light_fasta_input = prompt_for_existing_file(
+        prompt="Enter existing FASTA filename for LIGHT chains: ",
+        suffix= ".fasta",
+        search_dir= my_run_info.fasta_out_dir)
+    
+    heavy_fasta_input = prompt_for_existing_file(
+        prompt="Enter existing FASTA filename for HEAVY chains: ",
+        suffix= ".fasta",
+        search_dir= my_run_info.fasta_out_dir)
+
+
 
 # === Clustal Alignment ===
 # NOTE: Not currently set up
@@ -131,42 +154,53 @@ if proceed_clustal.lower() != 'y':
 
 # === .pir File Creation ===
 
-import convert_to_pir
+if ask_user("Do you wish to write new .pir file from clustal alignments?"):
+    
+    import convert_to_pir
 
-# Combine the light and heavy information into one table for .pir
-df_combined = convert_to_pir.merge_df_for_pir(df_light, df_heavy)
+    # Combine the light and heavy information into one table for .pir
+    df_combined = convert_to_pir.merge_df_for_pir(df_light, df_heavy)
 
-# Determine the order that chains appear in the cif file
-v_cif_chain_order = convert_to_pir.cif_parse(v_template, f"{v_template}.cif", my_run_info.cif_dir)
-c_cif_chain_order = convert_to_pir.cif_parse(c_template, f"{c_template}.cif", my_run_info.cif_dir)
+    # Determine the order that chains appear in the cif file
+    v_cif_chain_order = convert_to_pir.cif_parse(v_template, f"{v_template}.cif", my_run_info.cif_dir)
+    c_cif_chain_order = convert_to_pir.cif_parse(c_template, f"{c_template}.cif", my_run_info.cif_dir)
 
-# Extract relevant chain info and add to table
-df_combined_populated = convert_to_pir.relevant_chains(
-    df_combined, 
-    v_cif_chain_order, 
-    c_cif_chain_order, 
-    v_template, 
-    c_template
-)
-
-# Parses .aln-clustal files with Bio.AlignIO and extracts the gapped sequences.
-df_for_pir = convert_to_pir.extract_gapped_seqs(
-    df_combined_populated,
-    my_run_info.clustal_out_dir,
-    light_clustal_fname=f"Fab_alignment_{isotype_label}_light.aln-clustal", # replace this with automation
-    heavy_clustal_fname=f"Fab_alignment_{isotype_label}_heavy.aln-clustal" # replace this with automation
-)
-
-# Write .pir file populated to the standard required by MODELLER
-# The allowed format:
-#   >P1;3m8o
-#   structure:pdb_file:.:.:.:.::::
-#   seq1---/seq2---*
-
-convert_to_pir.write_modeller_pir(
-    df_for_pir, 
-    f"../pir_files/pir_alignment_{isotype_label}_{timestamp}.pir",
-    v_template,
-    c_template,
-    isotype_label
+    # Extract relevant chain info and add to table
+    df_combined_populated = convert_to_pir.relevant_chains(
+        df_combined, 
+        v_cif_chain_order, 
+        c_cif_chain_order, 
+        v_template, 
+        c_template
     )
+
+    # Parses .aln-clustal files with Bio.AlignIO and extracts the gapped sequences.
+    df_for_pir = convert_to_pir.extract_gapped_seqs(
+        df_combined_populated,
+        my_run_info.clustal_out_dir,
+        light_clustal_fname=f"Fab_alignment_{isotype_label}_light.aln-clustal", # replace this with automation
+        heavy_clustal_fname=f"Fab_alignment_{isotype_label}_heavy.aln-clustal" # replace this with automation
+    )
+
+    # Write .pir file populated to the standard required by MODELLER
+    # The allowed format:
+    #   >P1;3m8o
+    #   structure:pdb_file:.:.:.:.::::
+    #   seq1---/seq2---*
+
+    convert_to_pir.write_modeller_pir(
+        df_for_pir, 
+        f"../pir_files/pir_alignment_{isotype_label}_{timestamp}.pir",
+        v_template,
+        c_template,
+        isotype_label
+        )
+else:
+    
+    pir_input = prompt_for_existing_file(
+        prompt="Enter existing .pir filename: ",
+        suffix= ".pir",
+        search_dir= my_run_info.pir_out_dir
+        )
+
+

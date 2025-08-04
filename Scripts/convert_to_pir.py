@@ -149,7 +149,7 @@ def write_modeller_pir(
                 
                 v_pir_header = (
                     f">P1;{row['pdb']}\n"
-                    f"structureX:{row['pdb']}:{row["start_point"]}:{row["start_letter"]}:{row["end_point"]}:{row["end_letter"]}:"
+                    f"structureX:{row['pdb']}:{row["start_point"]}:{row["start_letter"]}:{row["end_point"]}:{row["end_letter"]}"
                     f":variable_template:::\n"
                 )
                 v_gapped_sequence = (f"{row['gapped_seq_1']}/{row['gapped_seq_2']}*\n")
@@ -158,16 +158,16 @@ def write_modeller_pir(
 
                 c_pir_header = (
                     f">P1;{row['pdb']}\n"
-                    f"structureX:{row['pdb']}:{row["start_point"]}:{row["start_letter"]}:{row["end_point"]}:{row["end_letter"]}:"
+                    f"structureX:{row['pdb']}:{row["start_point"]}:{row["start_letter"]}:{row["end_point"]}:{row["end_letter"]}"
                     f":constant_template_{isotype_label}:::\n"
                 )
-                c_gapped_sequence = (f"{row['gapped_seq_1']}/{row['gapped_seq_2']}*")
+                c_gapped_sequence = (f"{row['gapped_seq_1']}/{row['gapped_seq_2']}*\n")
 
             if row["template"] == "target":
 
                 target_pir_header = (
                     f">P1;{row['pdb']}_{isotype_label}_target\n"
-                    f"sequence:{row['pdb']}_{isotype_label}_target::.::.:hybrid_{isotype_label}_target:::"
+                    f"sequence:{row['pdb']}_{isotype_label}_target::.::.:hybrid_{isotype_label}_target:::\n"
                 )
                 target_gapped_sequence = (f"{row['gapped_seq_1']}/{row['gapped_seq_2']}*")
 

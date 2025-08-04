@@ -12,22 +12,22 @@ env = Environ()  # create a new MODELLER environment to build this model in
 env.io.atom_files_directory = ['.', '../atom_files']
 
 a = AutoModel(env,
-              alnfile  = '../PIR_files/alignment_IgM.pir', # alignment filename NOTE: import this from other script
-              knowns   = ('1n8z', '2agj'),                          # codes of the templates
-              sequence = 'VC_Hybrid_IgM_Target',                             # code of the target (used by MODELLER to name files)
+              alnfile  = '../pir_files/pir_alignment_IgG4.pir', # alignment filename NOTE: import this from other script
+              knowns   = ('1n8z', '3ncj'),                          # codes of the templates
+              sequence = 'Fab_hybrid_IgG4_target',                             # code of the target (used by MODELLER to name files)
               assess_methods=(assess.DOPE, assess.GA341))           # assessment methods
 a.starting_model= 1                 # index of the first model
 a.ending_model  = 5                 # index of the last model
                                     # (determines how many models to calculate)
 
 import os
-os.chdir("../Models")               # change output directory (this may need changing back to ../Scripts each run)
+os.chdir("../models")               # change output directory (this may need changing back to ../Scripts each run)
 a.set_output_model_format("MMCIF")  # request mmCIF rather than PDB outputs
 
 # NOTE a.name is internal and doesnt appear to influence final file naming. Look into `class MyModel(AutoModel)` for more ideas on how to set up custom rules
 from datetime import datetime
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-#a.name = f"VC_Hybrid_IgM_Model_Fab_{timestamp}"
+#a.name = f"VC_Hybrid_IgG4_Model_Fab_{timestamp}"
 
 a.initial_malign3d = True           # superpose the 3d structures before modelling
 a.make()                            # do the actual comparative modeling
@@ -46,8 +46,8 @@ print("Top model: %s (DOPE score %.3f)" % (top_model['name'], top_model[key]))
 # Preserve the model output (a.output) with pickle
 import pickle
 this_temp_v = "1n8z"
-this_temp_c = "2agj"
-this_target = "VC_Hybrid_IgM_Target"
+this_temp_c = "3ncj"
+this_target = "Fab_hybrid_IgG4_target"
 pickle_counter = 0
 
 
