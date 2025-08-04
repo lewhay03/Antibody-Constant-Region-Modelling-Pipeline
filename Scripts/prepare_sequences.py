@@ -1,7 +1,6 @@
 import pandas as pd
 import my_run_info
 import os
-from datetime import datetime
 
 
 def load_VCAb():
@@ -233,12 +232,9 @@ def make_df_lights(df_filtered: pd.DataFrame, recombinant_seq_light) -> pd.DataF
     return df_lights
 
 
-def write_fastas(df_l, df_h, fasta_out_dir, df_filtered):
+def write_fastas(df_l, df_h, fasta_out_dir, df_filtered, timestamp):
     """Write 2 fasta files for light and heavy chains."""
-    
-    # Create date-time stamp to add to file name
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
+        
     # Create isotype label to add to the filename
     isotype = str(df_filtered.query("template == 'c_template'")["H_isotype_clean"].iloc[0])
 
