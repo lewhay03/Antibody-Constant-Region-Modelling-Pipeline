@@ -12,10 +12,11 @@ env = Environ()  # create a new MODELLER environment to build this model in
 env.io.atom_files_directory = ['.', '../atom_files']
 
 a = AutoModel(env,
-              alnfile  = '../pir_files/pir_alignment_IgG4.pir', # alignment filename NOTE: import this from other script
-              knowns   = ('1n8z', '3ncj'),                          # codes of the templates
-              sequence = 'Fab_hybrid_IgG4_target',                             # code of the target (used by MODELLER to name files)
-              assess_methods=(assess.DOPE, assess.GA341))           # assessment methods
+    alnfile  = '../pir_files/pir-alignment-5dk3-monomer-with-AF-hinge-dimertest2.pir', # alignment filename NOTE: import this from other script
+    knowns   = ('IgG4ModellerHingeTemplate'),                          # codes of the templates
+    sequence = 'IgG4FullAbTarget',                             # code of the target (used by MODELLER to name files)
+    assess_methods=(assess.DOPE, assess.GA341)      # assessment methods
+    )           
 a.starting_model= 1                 # index of the first model
 a.ending_model  = 5                 # index of the last model
                                     # (determines how many models to calculate)
@@ -45,9 +46,9 @@ print("Top model: %s (DOPE score %.3f)" % (top_model['name'], top_model[key]))
 
 # Preserve the model output (a.output) with pickle
 import pickle
-this_temp_v = "1n8z"
-this_temp_c = "3ncj"
-this_target = "Fab_hybrid_IgG4_target"
+this_temp_v = "IgG4"
+this_temp_c = "IgG4ModellerHingeTemplate"
+this_target = "IgG4FullAbTarget"
 pickle_counter = 0
 
 
